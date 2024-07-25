@@ -2,7 +2,7 @@ package main
 
 import (
 	"gin-web-app/controllers"
-	"gin-web-app/models"
+	"gin-web-app/infra"
 	"gin-web-app/repositories"
 	"gin-web-app/services"
 
@@ -10,13 +10,16 @@ import (
 )
 
 func main() {
-	items := []models.Item{
-		{ID: 1, Name: "商品1", Price: 1000, Description: "説明１", Soldout: false},
-		{ID: 2, Name: "商品2", Price: 2000, Description: "説明２", Soldout: true},
-		{ID: 3, Name: "商品3", Price: 3000, Description: "説明３", Soldout: false},
-	}
+	infra.Initialize()
+	db := infra.SetupDB()
+	// items := []models.Item{
+	// 	{ID: 1, Name: "商品1", Price: 1000, Description: "説明１", Soldout: false},
+	// 	{ID: 2, Name: "商品2", Price: 2000, Description: "説明２", Soldout: true},
+	// 	{ID: 3, Name: "商品3", Price: 3000, Description: "説明３", Soldout: false},
+	// }
 
-	itemRepository := repositories.NewItemMemoryRepository(items)
+	// itemRepository := repositories.NewItemMemoryRepository(items)
+	itemRepository := repositories.NewItemRepository(db)
 	itemService := services.NewItemService(itemRepository)
 	itemController := controllers.NewItemController(itemService)
 
