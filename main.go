@@ -9,18 +9,10 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func main() {
-	infra.Initialize()
-	db := infra.SetupDB()
-	// items := []models.Item{
-	// 	{ID: 1, Name: "商品1", Price: 1000, Description: "説明１", Soldout: false},
-	// 	{ID: 2, Name: "商品2", Price: 2000, Description: "説明２", Soldout: true},
-	// 	{ID: 3, Name: "商品3", Price: 3000, Description: "説明３", Soldout: false},
-	// }
-
-	// itemRepository := repositories.NewItemMemoryRepository(items)
+func setupRouter(db *gorm.DB) *gin.Engine {
 	itemRepository := repositories.NewItemRepository(db)
 	itemService := services.NewItemService(itemRepository)
 	itemController := controllers.NewItemController(itemService)
@@ -43,6 +35,14 @@ func main() {
 
 	authRouter.POST("/signup", authController.Signup)
 	authRouter.POST("/login", authController.Login)
+
+	return r
+}
+
+func main() {
+	infra.Initialize()
+	db := infra.SetupDB()
+	r := setupRouter(db)
 
 	r.Run("localhost:8080")
 }
