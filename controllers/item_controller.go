@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"gin-web-app/dto"
+	"gin-web-app/models"
 	"gin-web-app/services"
 	"net/http"
 	"strconv"
@@ -36,13 +37,20 @@ func (c *ItemController) FindAll(ctx *gin.Context) {
 }
 
 func (c *ItemController) FindById(ctx *gin.Context) {
+	user := GetAuthenticatedUser(ctx)
+	if user == nil {
+		return
+	}
+
+	userId := user.ID
+
 	itemId, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid id"})
 		return
 	}
 
-	item, err := c.service.FindById(uint(itemId))
+	item, err := c.service.FindById(uint(itemId), userId)
 	if err != nil {
 		if err.Error() == "Item not found" {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -56,13 +64,20 @@ func (c *ItemController) FindById(ctx *gin.Context) {
 }
 
 func (c *ItemController) Create(ctx *gin.Context) {
+	user := GetAuthenticatedUser(ctx)
+	if user == nil {
+		return
+	}
+
+	userId := user.ID
+
 	var input dto.CreateItemInput
 	if err := ctx.ShouldBindJSON(&input); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	newItem, err := c.service.Create(input)
+	newItem, err := c.service.Create(input, userId)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -72,6 +87,13 @@ func (c *ItemController) Create(ctx *gin.Context) {
 }
 
 func (c *ItemController) Update(ctx *gin.Context) {
+	user := GetAuthenticatedUser(ctx)
+	if user == nil {
+		return
+	}
+
+	userId := user.ID
+
 	itemId, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid id"})
@@ -84,7 +106,7 @@ func (c *ItemController) Update(ctx *gin.Context) {
 		return
 	}
 
-	updatedItem, err := c.service.Update(uint(itemId), input)
+	updatedItem, err := c.service.Update(uint(itemId), userId, input)
 	if err != nil {
 		if err.Error() == "Item not found" {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -98,13 +120,20 @@ func (c *ItemController) Update(ctx *gin.Context) {
 }
 
 func (c *ItemController) Delete(ctx *gin.Context) {
+	user := GetAuthenticatedUser(ctx)
+	if user == nil {
+		return
+	}
+
+	userId := user.ID
+
 	itemId, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid id"})
 		return
 	}
 
-	err = c.service.Delete(uint(itemId))
+	err = c.service.Delete(uint(itemId), userId)
 	if err != nil {
 		if err.Error() == "Item not found" {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -115,4 +144,14 @@ func (c *ItemController) Delete(ctx *gin.Context) {
 	}
 
 	ctx.Status(http.StatusOK)
+}
+
+func GetAuthenticatedUser(ctx *gin.Context) *models.User {
+	user, exists := ctx.Get("user")
+	if !exists {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return nil
+	}
+
+	return user.(*models.User)
 }
